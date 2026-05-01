@@ -1,16 +1,21 @@
-import Anthropic from "@anthropic-ai/sdk"
+import Groq from "groq-sdk"
+import dotenv from "dotenv"
+import { fileURLToPath } from "url"
+import { dirname, join } from "path"
 
-// Sua chave de acesso
-const client = new Anthropic({ apiKey: "SUA-API-KEY-AQUI" })
+// Aponta pro .env na raiz do projeto
+const __dirname = dirname(fileURLToPath(import.meta.url))
+dotenv.config({ path: join(__dirname, "../.env") })
 
-// Faz a pergunta pro Claude — note o tipo da resposta
-const resposta: Anthropic.Message = await client.messages.create({
-    model: "claude-opus-4-5",
-    max_tokens: 1024,
+// Conecta ao Groq
+const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
+
+// Faz a pergunta
+const resposta: Groq.Chat.ChatCompletion = await client.chat.completions.create({
+    model: "llama-3.1-8b-instant",
     messages: [
         { role: "user", content: "Olá! Você é o Jarvis, meu assistente pessoal. Se apresente!" }
     ]
 })
 
-// Mostra a resposta
-console.log(resposta.content[0].text)
+console.log(resposta.choices[0].message.content)

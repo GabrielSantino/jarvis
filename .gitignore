@@ -1,0 +1,18 @@
+# Segredos
+.env
+
+# Dependências
+node_modules/
+
+#TypeScript compilado
+dist/
+*.js.map
+
+# Pythton
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Sistema
+.DS_Store
+Thumbs.db
