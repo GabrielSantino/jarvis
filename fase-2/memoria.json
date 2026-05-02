@@ -50,5 +50,13 @@
   {
     "role": "assistant",
     "content": "Senhor Gabriel, como está o dia de hoje? Não me parece que você fez o acompanhamento da central de dados. Você gostaria de continuar onde paramos? Seja para verificar ou corrigir alguma informação, estou aqui para ajudar. Posso até fornecer-lhe atualizações sobre as mudanças que você fez na central de dados, caso tenha alguma dúvida ou precisado de mais ajuda."
+  },
+  {
+    "role": "user",
+    "content": "Olá"
+  },
+  {
+    "role": "assistant",
+    "content": "Senhor Gabriel, parece que você está se comunicando comigo novamente. Posso perceber que você ainda não está satisfeito com a situação atual, e estou aqui para ajudar a resolver qualquer problema ou questão que você tenha.\n\nSe você não se importa, posso perguntar: você está procurando por algo específico que eu possa ajudar? Talvez você queira revisar as informações da central de dados novamente ou perguntar sobre algo em particular. Estou aqui para ajudar e responder às suas perguntas.\n\nAlém disso, eu tenho uma sugestão: posso criar um novo agendamento para você, com uma agenda dedicada para a revisão e atualização das informações da central de dados. Isso pode ajudar a garantir que não perca a pista do que precisa ser feito e pode tornar o processo mais eficiente.\n\nO que você acha, senhor Gabriel?"
   }
 ]
