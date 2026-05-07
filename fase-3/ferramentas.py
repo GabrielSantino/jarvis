@@ -3,7 +3,7 @@ import json
 from groq import Groq
 from dotenv import load_dotenv
 from pathlib import Path
-from duckduckgo_search import DDGS 
+from ddgs import DDGS 
 
 # Carrega o .env
 load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
@@ -19,7 +19,7 @@ def buscar_na_web(query: str) -> str:
             return "Nenhum resultado encontrado."
         # Formata os resultados
         texto = " "
-        for r in resultado:
+        for r in resultados:
             texto += f"Título: {r['title']}\n"
             texto += f"Resumo: {r['body']}\n\n"
         return texto
@@ -100,7 +100,7 @@ while True:
         )
 
 
-        resposta_texto = resposta_final.choices=[0].message.content
+        resposta_texto = resposta_final.choices[0].message.content
         historico.append({ "role": "assistant", "content": resposta_texto})
         print(f"Jarvis: {resposta_texto}\n")
 
