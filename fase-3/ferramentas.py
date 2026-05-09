@@ -10,6 +10,8 @@ load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+# Pasta onde as notas serão salvas
+
 # FERRAMENTA - busca na web
 def buscar_na_web(query: str) -> str:
     """Busca informações na web e retorna os resultados"""
