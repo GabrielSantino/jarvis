@@ -91,6 +91,101 @@ function criarNota(nome, conteudo) {
 }
 
 // - FERRAMENTA 3 - ler nota
-// Lê o conteudo de uma arquio 
+// Lê o conteudo de um arquivo .txt pelo nome 
+function lerNota(nome) {
+    const arquivo = join(PASTA_NOTAS, `${nome}.txt`)
+    // Verifica se o arquivo existe antes de tentar ler
+    if (!existsSync(arquivo)) {
+        return `Nota '${nome}' não encontrada.`
+    }
+    // Lê e retorna o conteúdo do arquivo
+    return readFileSync(arquivo, "utf-8")
+    
+}
 
+// - FERRAMENTA 4 - listar notas
+// Lista todos os arquivos .txt dentro da pasta de nota
+function listarNotas() {
+    // readdirSync - lê todos os arquivos da pasta
+    const arquivos = readdirSync(PASTA_NOTAS)
+    // Filtra só os .txt e remove a extensão  do nome
+    const notas = arquivos.filter(f => f.endsWith(".txt")).map(f => f.replace(".txt", ""))
+    if (notas.length === 0) return "Nenhuma nota encontrada."
+    // Junta os nomes com quebra de linha
+    return notas.join("\n")
+}
+
+// - FERRAMENTA 5 - deletar nota
+// Deleta um arquivo .txt pelo nome
+function deletarNota(nome) {
+    const arquivo = join(PASTA_NOTAS, `${nome}.txt`)
+    if (!existsSync(arquivo)) {
+        return `Nota '${nome}' não encontrada.`
+    }
+    // unlinkSync - deleta o arquivo permanemtemente
+    unlinkSync(arquivo)
+    return `Nota '${nome}' deletada com sucesso.`
+}
  
+// - DEFINIÇÃO DAS FERRAMENTAS PRO GROQ
+// Array de objetos que descreve cada ferramenta pra IA
+// A IA usa essas descrições pra decidir qual ferramenta chamar
+const ferramentas = [ 
+    { 
+        type: "function",
+        function: {
+            name: "buscarNaWeb",
+            description: "Busca informações atuais na internet. Use para clima, notícias, preços e dados em tempo real.",
+            parameters: {
+                type: "object",
+                properties: {
+                    query: { type: "string", description: " O que buscar na web" }
+                },
+                required: ["query"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "criarNota",
+            description: "Cria uma nota e salva num arquivo.",
+            parameters: {
+                type: "object",
+                properties: {
+                    nome: { type: "string", description: "Nome da nota sem espaços" },
+                    conteudo: { type: "string", description: "Conteúdo da nota" }
+                },
+                required: ["nome", "conteudo"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "lerNota",
+            description: "Lê o conteúdo de uma nota salva.",
+            parameters: {
+                type: "object",
+                properties: {
+                    nome: { type: "string", description: "Nome da nota a ler" }
+                },
+                required: ["nome"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "deletarNota",
+            description: "Deleta uma nota salva.",
+            parameters: {
+                type: "object",
+                properties: {
+                    nome: { type: "string", description: "Nome da nota a deletar" }
+                },
+                required: ["nome"]
+            }
+        }
+    }
+]
