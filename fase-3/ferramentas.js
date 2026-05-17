@@ -189,3 +189,108 @@ const ferramentas = [
         }
     }
 ]
+
+// - MAPA DE FUNÇÕES 
+// Conecta o nome da ferramenta (string) com a função real
+// Quando a IA diz "chame buscarNaWeb" - buscamos aqui a função correspondente
+const mapaFerramentas= {
+    buscarNaWeb,
+    criarNota,
+    lerNota,
+    listarNotas,
+    deletarNota
+}
+
+// - INTERFACE DO TERMINAL  
+// readline - cria uma interface de leitura do terminal
+// process.stdin - entrada padrão (teclado)
+// process.stdout - saída padrão (terminal)
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+})
+
+console.log("Jarvis online. Digite 'sair' para encerrar. \n" )
+// - HISTÓRICO DA CONVERSA
+const historico = [
+    {
+        role: "system",
+        content: "Você é o Jarvis, assistente pessoal do Gabriel. Seja direto e inteligente. Use as ferramentas disponíveis quando necessário. Sempre chame o usuário de 'senhor Gabriel'."
+    }
+]
+// - LOOP DE CONVERSA
+// Função recursiva - chama a si mesma pra manter o loop
+async function conversar() {
+    rl.question("Você: ", async (entrada) => {
+
+        //.toLowerCase() - converte pra minúsculo antes de comparar
+        if (entrada.toLocaleLowerCase() === "sair") {
+            console.log("Jarvis: Até logo, senhor Gabriel.")
+            rl.close()
+            return
+        }
+
+        // Adiciona a mensagem do usuário ao histórico
+        historico.push({ role:"user",  content: entrada })
+
+        // Primeira chamada - IA decide se usa ferramenta ou responde direto
+        // tool_choice: "auto" - IA decide sozinha quando usar ferramentas
+        const resposta = await client.chat.completions.create({
+            model: "llama-3.3-70b-versatile",
+            messages: historico,
+            tools: ferramentas,
+            tool_choice: "auto"
+        })
+
+        const mensagem = resposta.choices[0].message
+
+        // tool_calls - lista de ferramentas que a IA quer usar
+        if (mensagem.tool_calls) {
+            // Adiciona a decisão da IA ao histórico
+            historico.push(mensagem)
+
+            // Executa cada ferramenta solicitada
+            for (const toolCall of mensagem.tool_calls) {
+                // nome da ferramenta que a IA quer chamar
+                const nomeFuncao = toolCall.function.name
+
+                // arguments - parâmetros que a IA passou pra ferramenta
+                // JSON.parse - converte o texto JSON em objeto JS
+                const args = JSON.parse(toolCall.function.arguments)
+
+                console.log(`🔧 Usando ferramenta: ${nomeFuncao}`)
+
+                // Busca a função no mapa a executa com os argumenetos
+                const funcao = mapaFerramentas[nomeFuncao]
+                const resultado = await funcao(...Object.values(args))
+
+                // Adiciona o resultado  da ferramenta ao histórico
+                historico.push({
+                    role: "tool",
+                    tool_call_id: toolCall.id,
+                    content: String(resultado)
+                })
+            }
+
+            // Segunda chamada - IA responde com base no resultado da ferramenta
+            const respostaFinal = await client.chat.completions.create({
+                model:"llama-3.3-70b-versatile",
+                messages: historico
+            })
+
+            const respostaTexto = respostaFinal.choices[0].message.content
+            historico.push({ role: "assistant", content: respostaTexto })
+            console.log(`Jarvis: ${respostaTexto}\n`)
+        } else {
+            // IA respondeu sem precisar de ferramenta
+            historico.push({ role: "assistant", content: mensagem.content })
+            console.log(`Jarvis: ${mensagem.content}\n`)
+        }
+
+        // Chama a si mesma - mantém o loop de conversa
+        conversar()
+    })
+}
+
+// Inicia o loop de conversa
+conversar()
