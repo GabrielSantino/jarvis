@@ -9,22 +9,18 @@ import { fileURLToPath } from "url"
 import { dirname, join } from "path"
 
 // Importa fs — lê e escreve arquivos no sistema
-import { writeFileSync, createReadStream } from "fs"
+import { createReadStream, createWriteStream } from "fs"
 
-// Importa readline — lê input do terminal
-import readline from "readline"
-
-// Importa say — converte texto em fala (TTS) usando a voz do sistema
+// Importa say — converte texto em fala (TTS)
 import say from "say"
 
-// Importa child_process — executa comandos do sistema operacional
-// execSync — executa um comando e espera terminar
-import { execSync } from "child_process"
+// Importa Microphone — captura áudio do microfone no Windows
+import Microphone from "node-microphone"
 
-// Reconstrói o __dirname — necessário em ES Modules
+// Reconstrói o __dirname
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-// Carrega o .env da raiz do projeto
+// Carrega o .env
 dotenv.config({ path: join(__dirname, "..", ".env") })
 
 // Cria o cliente Groq
@@ -39,54 +35,51 @@ const historico = [
 ]
 
 // ── FUNÇÃO TTS ─────────────────────────────────────────
-// say.speak() — usa a voz nativa do sistema operacional
-// Retorna uma Promise — aguarda terminar de falar
 function falar(texto) {
     return new Promise((resolve) => {
         console.log(`Jarvis: ${texto}`)
-        // say.speak(texto, voz, velocidade, callback)
-        // null = voz padrão do sistema
-        // 1.0 = velocidade normal
         say.speak(texto, null, 1.0, () => resolve())
     })
 }
 
 // ── FUNÇÃO STT ─────────────────────────────────────────
-// Grava áudio pelo microfone usando sox (gravador de linha de comando)
-// Envia pro Groq Whisper e retorna o texto transcrito
-async function ouvir() {
-    const arquivoAudio = join(__dirname, "audio.wav")
+function ouvir() {
+    return new Promise((resolve) => {
+        const arquivoAudio = join(__dirname, "audio.wav")
+        const mic = new Microphone()
+        const stream = mic.startRecording()
+        const writer = createWriteStream(arquivoAudio)
 
-    console.log("🎤 Ouvindo... (fale agora, pressione Ctrl+C pra parar)")
+        console.log("🎤 Ouvindo... (aguarde 5 segundos)")
 
-    try {
-        // sox — programa de linha de comando para gravar áudio
-        // rec = grava do microfone
-        // -r 16000 = frequência 16000Hz
-        // -c 1 = mono (1 canal)
-        // silence = para quando detectar silêncio
-        // 1 0.1 3% = espera 0.1s com volume abaixo de 3% pra começar
-        // 1 2.0 3% = para após 2s de silêncio abaixo de 3%
-        execSync(
-            `sox -d -r 16000 -c 1 ${arquivoAudio} silence 1 0.1 3% 1 2.0 3%`,
-            { stdio: "inherit" }
-        )
-    } catch {
-        return null
-    }
+        // Escreve o áudio no arquivo
+        stream.pipe(writer)
 
-    // Envia o áudio pro Groq Whisper
-    const stream = createReadStream(arquivoAudio)
-    const resposta = await client.audio.transcriptions.create({
-        file: stream,
-        model: "whisper-large-v3",
-        response_format: "json",
-        language: "pt"
+        // Para após 5 segundos
+        setTimeout(async () => {
+            mic.stopRecording()
+            writer.end()
+
+            // Aguarda o arquivo ser salvo
+            writer.on("finish", async () => {
+                try {
+                    const audioStream = createReadStream(arquivoAudio)
+                    const resposta = await client.audio.transcriptions.create({
+                        file: audioStream,
+                        model: "whisper-large-v3",
+                        response_format: "json",
+                        language: "pt"
+                    })
+                    const texto = resposta.text.trim()
+                    console.log(`Você disse: ${texto}`)
+                    resolve(texto || null)
+                } catch (erro) {
+                    console.log(`Erro na transcrição: ${erro.message}`)
+                    resolve(null)
+                }
+            })
+        }, 5000)
     })
-
-    const texto = resposta.text.trim()
-    console.log(`Você disse: ${texto}`)
-    return texto || null
 }
 
 // ── FUNÇÃO JARVIS ──────────────────────────────────────
@@ -126,4 +119,4 @@ async function main() {
     }
 }
 
-main
+main()
