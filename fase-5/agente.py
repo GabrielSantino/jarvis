@@ -57,7 +57,7 @@ def ler_nota(nome: str) -> str:
     
 def listar_notas() -> str:
         """Lista todas as notas salvas"""
-        notas = list(PASTA_NOTAS.glob(".txt"))
+        notas = list(PASTA_NOTAS.glob("*.txt"))
         if not notas:
             return "Nenhuma nota encontrada."
         return "\n". join([n.stem for n in notas])
@@ -80,6 +80,21 @@ ferramentas = [
                     "type": "object",
                     "properties": {
                         "query": {"type": "string", "description": "O que buscar"}
+                    },
+                    "required":["query"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "criar_nota",
+                "description": "Cria uma nota e salva num arquivo.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "nome": {"type": "string", "description": "Nome da nota"},
+                        "conteudo": {"type": "string", "description": "Conteúdo da nota"}
                     },
                     "required":["nome", "conteudo"]
                 }
@@ -134,12 +149,9 @@ mapa_ferramentas = {
 
 # - AGENTE  - loop de raciocínio
 def executar_agente(objetivo: str) -> str:
-     """
-     Loop de agência - a IA planeja e executa passos
-     até completar o objetivo
-     """
+    """..."""
 
-    # Histórico interno do agente
+
     mensagens = [
         {
             "role": "system",
@@ -171,3 +183,48 @@ def executar_agente(objetivo: str) -> str:
         )
 
         mensagem = resposta.choices[0].message
+
+        # Se a IA não quer usar ferramentas - terminou!
+        if not mensagem.tool_calls:
+             print("\n✅ Objetivo concluído!")
+             return mensagem.content
+        # Adiciona a decisão da IA ao histórico
+        mensagens.append(mensagem)
+
+        # Executa cada ferramenta solicitada
+        for tool_call in mensagem.tool_calls:
+             nome_funcao = tool_call.function.name
+             args = json.loads(tool_call.function.arguments)
+
+             print(f"🔧 Executando: {nome_funcao}({args})")
+
+             funcao = mapa_ferramentas[nome_funcao]
+             if args:
+                  resultado = funcao(**args)
+             else:
+                  resultado = funcao()
+
+
+             print(f"📋 Resultado: {resultado[:100]}...")
+
+             # Adiciona o resultado ao histórico
+             mensagens.append({
+                  "role": "tool",
+                  "tool_call_id": tool_call.id,
+                  "content": resultado
+             })
+
+    return  "Não consegui completar o objetivo do número máximo de passos."
+
+# - LOOP PRINCIPAL
+print("Jarvis Agente online. Digite 'sair' para encerrar.\n")
+
+while True:
+     objetivo = input("Você: ")
+
+     if objetivo.lower() == "sair":
+          print("Jarvis: Até logo, senhor Gabriel.")
+          break
+     
+     resultado = executar_agente(objetivo)
+     print(f"\nJarvis: {resultado}\n")
