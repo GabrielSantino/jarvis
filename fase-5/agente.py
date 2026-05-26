@@ -162,7 +162,7 @@ def executar_agente(objetivo: str) -> str:
         },
         {
             "role": "user",
-            "content":objetivo
+            "content": objetivo
         }
     ]
 
@@ -175,12 +175,16 @@ def executar_agente(objetivo: str) -> str:
         print(f"\n🤔 Passo {passo + 1} — raciocínando...")
 
         # IA decide o próximo passo
-        resposta = client.chat.completions.create(
-             model="llama-3.3-70b-versatile",
-             messages=mensagens,
-             tools=ferramentas,
-             tool_choice="auto"
-        )
+        try:
+            resposta = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=mensagens,
+                tools=ferramentas,
+                tool_choice="auto"
+            )
+        except Exception as e:
+             print(f"⚠️ Erro no passo {passo + 1}: {e}")
+             break
 
         mensagem = resposta.choices[0].message
 
