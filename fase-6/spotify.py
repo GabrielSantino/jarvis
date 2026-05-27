@@ -26,7 +26,7 @@ SCOPES = "user-read-playback-state user-modify-playback-state user-read-currentl
  # Na primeira vez abre o navegador pra você autorizar
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
      client_id=os.getenv("SPOTIFY_CLIENT_ID"),
-     client_secret=os.getenv("SPOTIFY_CLIENT_ID"),
+     client_secret=os.getenv("SPOTIFY_CLIENT_SECRET"),
      redirect_uri=os.getenv("SPOTIFY_REDIRECT_URI"),
      scope=SCOPES
 ))
@@ -42,8 +42,8 @@ def tocar_musica(nome: str) -> str:
     
     # Pega a primeira música encontrada
     track = tracks[0]
-    uri = tracks["uri"]
-    artista = tracks["artists"][0]["name"]
+    uri = track["uri"]
+    artista = track["artists"][0]["name"]
     titulo = track["name"]
 
     # Toca a música 
@@ -69,3 +69,34 @@ def proxima() -> str:
     """Pula pra próxima música"""
     sp.next_track()
     return "Próxima música."
+
+def anterior() -> str:
+    """Volta pra música anterior"""
+    sp.previous_track()
+    return "Música anterior."
+
+def volume(nivel: int) -> str:
+    """Ajusta o volume - 0 a 100"""
+    sp.volume(nivel)
+    return f"Volume ajustado para {nivel}%."
+
+def musica_atual() -> str:
+    """Retorna o que está tocando agora"""
+    atual = sp.current_playback()
+    if not atual or not atual["is_playing"]:
+        return "Nenhuma música tocando no momento."
+    track = atual["item"]
+    titulo = track["name"]
+    artista = track["artists"][0]["name"]
+    return f"Tocando agora: {titulo} - {artista}"
+
+# - TESTE
+print("Spotify conectado! Testando...\n")
+
+# - Testa cada função
+print(tocar_musica("Bohemian Rhapsody Queen"))
+
+#print(musica_atual())
+#print(volume(50))
+#print(proxima())
+#print(pausar())
