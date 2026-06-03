@@ -90,3 +90,13 @@ def buscar_na_web(query:str) -> str:
         for r in resultados:
             texto += f"Título: {r['title']}\n"
             texto += f"Resumo: {r['body']}\n\n"
+        return texto
+    
+def criar_nota(nome: str, conteudo: str) -> str:
+    arquivo = PASTA_NOTAS / f"{nome}.txt"
+    with open(arquivo, "w", encoding="utf-8") as f:
+        f.write(conteudo)
+    return f"Nota '{nome}' criada com sucesso."
+
+def ler_nota(nome: str) -> str:
+    arquivos = 
