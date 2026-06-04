@@ -99,4 +99,21 @@ def criar_nota(nome: str, conteudo: str) -> str:
     return f"Nota '{nome}' criada com sucesso."
 
 def ler_nota(nome: str) -> str:
-    arquivos = 
+    arquivos = PASTA_NOTAS / f"{nome}.txt"
+    if not arquivo.exists():
+        return f"Nota '{nome}' não encontrada."
+    with open(arquivo, "r", encoding="utf-8") as f:
+        return f.read()
+    
+def listar_notas() -> str:
+    notas = list(PASTA_NOTAS.glob("*.txt"))
+    if not notas:
+        return "Nenhuma nota encontrada."
+    return "\n".join([n.stem for n in notas])
+
+def deletar_nota(nome: str) -> str:
+    arquivo = PASTA_NOTAS / f"{nome}.txt"
+    if not arquivo.exists():
+        return f"Nota '{nome}' não encontrada."
+    arquivo.unlink()
+    return f"Nota '{nome}' não encontrada."
