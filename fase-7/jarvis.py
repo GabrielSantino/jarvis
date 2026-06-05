@@ -116,4 +116,46 @@ def deletar_nota(nome: str) -> str:
     if not arquivo.exists():
         return f"Nota '{nome}' não encontrada."
     arquivo.unlink()
-    return f"Nota '{nome}' não encontrada."
+    return f"Nota '{nome}' deletada com sucesso."
+
+def tocar_musica(nome: str) -> str:
+    resultado = sp.search(q=nome, limit=1, type="track")
+    tracks = resultado["tracks"]["items"]
+    if not tracks:
+        return f"Música '{nome}' não encontrada."
+    track = track[0]
+    sp.start_playback(uris=[track["uri"]])
+    return f"Tocando: {track['name']} - {track['artists'][0]['name']}"
+
+def pausar_musica() -> str:
+    sp.pause_playback()
+    return "Música pausada."
+
+def proxima_musica() -> str:
+    sp.next_track()
+    return "Próxima música."
+
+# - DEFINIÇÃO DAS FERRAMENTAS
+ferramentas = [
+    {
+        "type": "function",
+        "function": {
+            "name": "buscar_na_web",
+            "description": "Busca informações atuais na internet.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "O que buscar"}
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "criar_nota",
+            
+        }
+    }
+]
