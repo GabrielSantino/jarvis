@@ -155,7 +155,233 @@ ferramentas = [
         "type": "function",
         "function": {
             "name": "criar_nota",
-            
+            "description": "Cria uma nota e salva num arquivo.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "nome": {"type": "string", "description": "Nome da nota"},
+                    "conteudo": {"type": "string", "description": "Conteúdo da nota"}
+                },
+                "required": ["nome", "conteudo"]
+            }
+        }
+    },
+     {
+        "type": "function",
+        "function": {
+            "name": "ler_nota",
+            "description": "Lê o conteúdo de uma nota.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "nome": {"type": "string", "description": "Nome da nota"}
+                },
+                "required": ["nome"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "listar_notas",
+            "description": "Lista todas as notas salvas.",
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "deletar_nota",
+            "description": "Deleta uma nota.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "nome": {"type": "string", "description": "Nome da nota"}
+                },
+                "required": ["nome"]
+            }
+        }
+    },{
+        "type": "function",
+        "function": {
+            "name": "deletar_nota",
+            "description": "Deleta uma nota.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "nome": {"type": "string", "description": "Nome da nota"}
+                },
+                "required": ["nome"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "tocar_musica",
+            "description": "Toca uma música no Spotify.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "nome": {"type": "string", "description": "Nome da música"}
+                },
+                "required": ["nome"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "pausar_musica",
+            "description": "Pausa a música no Spotify.",
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "proxima_musica",
+            "description": "Pula pra próxima música no Spotify.",
+            "parameters": {"type": "object", "properties": {}}
         }
     }
 ]
+
+mapa_ferramentas = {
+    "buscar_na_web": buscar_na_web,
+    "criar_nota": criar_nota,
+    "ler_nota": ler_nota,
+    "listar_notas": listar_notas,
+    "deletar_nota": deletar_nota,
+    "tocar_musica": tocar_musica,
+    "pausar_musica": pausar_musica,
+    "proxima_musica": proxima_musica
+}
+
+# - TTS
+def falar(texto: str):
+    motor = pyttsx3.init()
+    motor.setProperty("rate", 150)
+    motor.say(texto)
+    motor.runAndWait()
+    motor.stop()
+
+# - STT
+def ouvir() -> str  | None:
+    fs = 16000
+    chunk = 1024
+    silencio_limite = 0.05
+    silencio_max = 2
+
+    print("🎤 Ouvindo...")
+    gravando = []
+    silencio = 0
+    falando = False
+
+    with sd.InputStream(samplarate=fs, channels=1, dtype='float32') as stream:
+        while True:
+            pedaco, _ = stream.read(chunk)
+            volume = np.abs(pedaco).mean()
+
+            if volume > silencio_limite:
+                falando = True
+                silencio = 0
+                gravando.append(pedaco)
+            elif falando:
+                silencio += chunk / fs
+                gravando.append(pedaco)
+                if silencio >= silencio_max:
+                    break
+
+    audio = np.concatenate(gravando, axis=0)
+    write("audio.wav", fs, audio)
+
+    with open("audio.wav", "rb") as f:
+        resposta = client.audio.transcriptions.create(
+            file=r,
+            model="whisper-large-v3",
+            response_format="json"
+        )
+    return resposta.text.strip() or None
+
+# - AGENTE
+def processar(entrada:str, ws_callback=None) -> str:
+    historico.append({"role": "user", "content": entrada})
+
+    mensagens = historico.copy()
+
+    for passo in range(10):
+        resposta = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=mensagens,
+            tools=ferramentas,
+            tool_choice="auto"
+        )
+
+        mensagem = resposta.choices[0].message
+
+        if not mensagem.tool_calls:
+            texto = mensagem.content
+            historico.append({"role": "assistant", "content": texto})
+            salvar_memoria(historico)
+            return texto
+        
+        mensagens.append(mensagem)
+
+        for tool_call in mensagem.tool_calls:
+            nome = tool_call.function.name
+            args = json.loads(tool_call.function.arguments)
+
+            if ws_callback:
+                ws_callback(f"🔧 {nome}")
+            
+            funcao = mapa_ferramentas[nome]
+            resultado = funcao(**args) if args else funcao()
+
+            mensagens.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": resultado
+            })
+    
+    return "Não consegui completar a tarefa."
+
+# - WAKE WORD
+def detectar_wake_word(texto: str) -> bool:
+    """Verifica se o texto contém a wake word"""
+    wake_words = ["olá jarvis", "ola jarvis", "hey jarvis", "jarvis"]
+    return any(w in texto.lower() for w in wake_words)
+
+# - SERVIDOR FASTAPI
+app = FastAPI()
+
+# Permite o React se comunicar com o servidor
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+# WebSocket - canal de comunicação em tempo real com o React
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    await websocket.send_json({"tipo": "status", "dados": "conectado"})
+
+    while True:
+        dados = await websocke.receive_json()
+        tipo = dados.get("tipo")
+
+        if tipo == "texto":
+            entrada = dados.get("entrada")
+            await websocket.send_json({"tipo": "resposta", "dados": "pensando"})
+
+            def callback(msg):
+                asyncio.run(websocket.send_json({"tipo": "ferramenta", "dados": msg}))
+
+            resposta = processar(entrada, callback)
+            await websocket.send_json({"tipo": "resposta", "dados": resposta})
+
+        elif tipo == "voz":
+            await websocket.send_json({"tipo"})
