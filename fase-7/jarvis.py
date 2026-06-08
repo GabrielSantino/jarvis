@@ -384,4 +384,32 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.send_json({"tipo": "resposta", "dados": resposta})
 
         elif tipo == "voz":
-            await websocket.send_json({"tipo"})
+            await websocket.send_json({"tipo": "status", "dados": "ouvindo"})
+            texto = await asyncio.to_thread(ouvir)
+
+            if texto:
+                await websocket.send_json({"tipo": "transcricao", "dados": texto})
+
+                if detectar_wake_word(texto):
+                    texto = texto.lower()
+                    for w in ["olá jarvis", "ola jarvis", "hey jarvis", "jarvis"]:
+                        texto = texto.replace(w, "").strip()
+                
+                await websocket.send_json({"tipo": "status", "dados": "pensando"})
+                resposta = processar(texto)
+                await websocket.send_json({"tipo": "resposta", "dados": resposta})
+
+                threading.Thread(target=falar, args=(resposta,)).start()
+            else:
+                await websocket.send_json({"tipo": "status", "dados": "nao_entendi"})
+
+# - ROTA DE STATUS
+@app.get("/")
+def status():
+    return {"status": "Jarvis online"}
+
+# - INICIA O SERVIDOR
+if __name__ == "__main__":
+    import uvicorn
+    print("🚀 Jarvis iniciando...")
+    uvicorn.run(app,host="0.0.0.0", port = 8000)
