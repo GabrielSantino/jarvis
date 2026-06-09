@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from "framer-motion"
-import { Mic, Mic0ff, Volume2, Loader, Zap } from "lucide-react"
-import { label } from 'framer-motion/client';
+import { Mic, MicOff, Volume2, Loader, Zap } from "lucide-react"
+
 
 //URL do backend Python
 const WS_URL = "ws://localhost:8000/ws"
@@ -179,7 +179,7 @@ export default function App() {
         key={estado}
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{ fontSize> "13px", color: corAtual, letterSpacing: "3px", marginBottom: "8px" }}
+        style={{ fontSize: "13px", color: corAtual, letterSpacing: "3px", marginBottom: "8px" }}
       >
         {ESTADOS[estado]?.label?.toUpperCase()}
       </motion.p>
@@ -226,16 +226,69 @@ export default function App() {
         <AnimatePresence>
           {mensagem.map(msg => (
             <motion.div
-            key={msg.id}
-            initial={{ opacity: 0, y: 20}}
-            animate={{ opacity: 0, y: 0 }}
-            style={{
-              alignSelf: msg.origem === "user" ? "flex-end" : "flex-start",
-              maxWidth: "80%",
-              padding: 
+              key={msg.id}
+              initial={{ opacity: 0, y: 20}}
+              animate={{ opacity: 0, y: 0 }}
+              style={{
+                alignSelf: msg.origem === "user" ? "flex-end" : "flex-start",
+                maxWidth: "80%",
+                padding: "12px 16px",
+                borderRadius: msg.origem === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                background: msg.origem === "user" ? "#1a2a4a" : "#1a1a2e",
+                border: `1px solid ${msg.origem === "user" ? " #4A90d9" : " #4A90AD"}22`,
+                fontSize: "14px",
+                lineHeight: "1.6",
+                color: "#ddd"
             }}
+            >
+              <span style={{ fontSize: "10px", color: "#555", display: "block", marginBottom: "4px" }}>
+                {msg.origem === "user" ? "Você" : "Jarvis"}
+              </span>
+              {msg.texto}
+            </motion.div>
           ))}
         </AnimatePresence>
       </div>
+
+      {/* Input de texto */}
+      <div style={{
+        display: "flex",
+        gap: "8px",
+        width: "100%",
+        maxWidth: "600px"
+      }}>
+        <input
+          value={entrada}
+          onChange={e => setEntrada(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && enviarTexto()}
+          placeholder="Digite ou clique no orbe para falar..."
+          style={{
+            flex: 1,
+            padding: "12px 16px",
+            borderRadius: "12px",
+            border: "1px solid #333",
+            background: "#111",
+            color: "#fff",
+            fontSize: "14px",
+            outline: "none"
+          }}
+        />
+        <button
+          onClick={enviarTexto}
+          style={{
+            padding: "12px 20px",
+            borderRadius: "12px",
+            border: "none",
+            background: "#4A90d9",
+            color: "#fff",
+            cursor: "pointer",
+            fontSize: "14px"
+          }}
+        >
+          Enviar
+        </button>
+      </div>
+
+    </div>
   )
 }
