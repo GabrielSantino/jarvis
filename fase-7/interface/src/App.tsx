@@ -17,7 +17,7 @@ const ESTADOS = {
 
 export default function App() {
   const [estado, setEstado] = useState("idle")
-  const [mensagem, setMensagens] = useState([])
+  const [mensagens, setMensagens] = useState([])
   const [ferramenta, setFerramenta] = useState(null)
   const [entrada, setEntrada] = useState("")
   const [conectado, setConectado] = useState(false)
@@ -53,11 +53,16 @@ export default function App() {
       const dados = JSON.parse(event.data)
 
       if (dados.tipo === "status") {
+        setEstado(dados.dados === "conectado" ? "idle" : dados.dados)
+        setFerramenta(null)
+      }
+
+      if (dados.tipo === "ferramenta") {
         setFerramenta(dados.dados)
       }
 
       if (dados.tipo === "transcricao") {
-        adicionarMEnsagem("usar", dados.dados)
+        adicionarMensagem("usar", dados.dados)
       }
 
       if (dados.tipo === "resposta") {
@@ -81,7 +86,7 @@ export default function App() {
   }
 
   function ativarVoz() {
-    if(!conectado) return
+    if (!conectado) return
     ws.current.send(JSON.stringify({ tipo: "voz"}))
     setEstado("ouvindo")
   }
@@ -224,7 +229,7 @@ export default function App() {
         }}
       >
         <AnimatePresence>
-          {mensagem.map(msg => (
+          {mensagens.map(msg => (
             <motion.div
               key={msg.id}
               initial={{ opacity: 0, y: 20}}
