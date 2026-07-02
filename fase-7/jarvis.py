@@ -99,7 +99,7 @@ def criar_nota(nome: str, conteudo: str) -> str:
     return f"Nota '{nome}' criada com sucesso."
 
 def ler_nota(nome: str) -> str:
-    arquivos = PASTA_NOTAS / f"{nome}.txt"
+    arquivo = PASTA_NOTAS / f"{nome}.txt"
     if not arquivo.exists():
         return f"Nota '{nome}' não encontrada."
     with open(arquivo, "r", encoding="utf-8") as f:
@@ -278,7 +278,7 @@ def ouvir() -> str  | None:
     silencio = 0
     falando = False
 
-    with sd.InputStream(samplarate=fs, channels=1, dtype='float32') as stream:
+    with sd.InputStream(samplerate=fs, channels=1, dtype='float32') as stream:
         while True:
             pedaco, _ = stream.read(chunk)
             volume = np.abs(pedaco).mean()
@@ -298,7 +298,7 @@ def ouvir() -> str  | None:
 
     with open("audio.wav", "rb") as f:
         resposta = client.audio.transcriptions.create(
-            file=r,
+            file=f,
             model="whisper-large-v3",
             response_format="json"
         )
@@ -370,7 +370,7 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.send_json({"tipo": "status", "dados": "conectado"})
 
     while True:
-        dados = await websocke.receive_json()
+        dados = await websocket.receive_json()
         tipo = dados.get("tipo")
 
         if tipo == "texto":
